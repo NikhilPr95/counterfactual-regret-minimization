@@ -1,12 +1,16 @@
-from common.constants import CHECK, BET, CALL, FOLD, A, CHANCE, RESULTS_MAP
+from enum import Enum
+
+from common.constants import CHECK, BET, CALL, FOLD, A, CHANCE
+from common.player import PlayerSet
+from common.utils import get_result
 import random
 
-class GameStateBase:
 
-    def __init__(self, parent, to_move, actions):
+class GameStateBase:
+    def __init__(self, parent, actions, to_move):
         self.parent = parent
-        self.to_move = to_move
         self.actions = actions
+        self.to_move = to_move
 
     def play(self, action):
         return self.children[action]
@@ -17,13 +21,15 @@ class GameStateBase:
     def inf_set(self):
         raise NotImplementedError("Please implement information_set method")
 
-class KuhnRootChanceGameState(GameStateBase):
 
-    def __init__(self, actions):
-        super().__init__(parent = None, to_move = CHANCE, actions = actions)
+class KuhnRootChanceGameState(GameStateBase):
+    def __init__(self, num_players, actions):
+        self.players = PlayerSet(num_players)
+
+        super().__init__(parent=None, to_move=CHANCE, actions=actions)
         self.children = {
             cards: KuhnPlayerMoveGameState(
-                self, A, [],  cards, [BET, CHECK]
+                self, self.players.get_first_player(), [],  cards, [BET, CHECK]
             ) for cards in self.actions
         }
         self._chance_prob = 1. / len(self.children)
@@ -40,24 +46,26 @@ class KuhnRootChanceGameState(GameStateBase):
     def sample_one(self):
         return random.choice(list(self.children.values()))
 
+
 class KuhnPlayerMoveGameState(GameStateBase):
+    def __init__(self, parent, current_player, actions_history, cards, actions):
+        super().__init__(parent=parent, to_move=current_player, actions=actions)
 
-    def __init__(self, parent, to_move, actions_history, cards, actions):
-        super().__init__(parent = parent, to_move = to_move, actions = actions)
-
+        self.current_player = current_player
         self.actions_history = actions_history
         self.cards = cards
         self.children = {
-            a : KuhnPlayerMoveGameState(
+            a: KuhnPlayerMoveGameState(
                 self,
-                -to_move,
+                current_player.get_next_player(),
                 self.actions_history + [a],
                 cards,
                 self.__get_actions_in_next_round(a)
             ) for a in self.actions
         }
 
-        public_card = self.cards[0] if self.to_move == A else self.cards[1]
+        # public_card = self.cards[0] if self.to_move == A else self.cards[1]
+        public_card = self.cards[0] if self.current_player.team == 1 else self.cards[1]
         self._information_set = ".{0}.{1}".format(public_card, ".".join(self.actions_history))
 
     def __get_actions_in_next_round(self, a):
@@ -81,10 +89,11 @@ class KuhnPlayerMoveGameState(GameStateBase):
             raise RuntimeError("trying to evaluate non-terminal node")
 
         if self.actions_history[-1] == CHECK and self.actions_history[-2] == CHECK:
-            return RESULTS_MAP[self.cards] * 1 # only ante is won/lost
+            return get_result(self.cards) * 1 # only ante is won/lost
 
         if self.actions_history[-2] == BET and self.actions_history[-1] == CALL:
-            return RESULTS_MAP[self.cards] * 2
+            return get_result(self.cards) * 2
 
         if self.actions_history[-2] == BET and self.actions_history[-1] == FOLD:
-            return self.to_move * 1
+            return self.current_player.weight
+            # return self.to_move * 1
