@@ -5,7 +5,6 @@ from enum import Enum
 # KQ = "KQ"; KJ = "KJ"; QK = "QK"; QJ = "QJ"; JK = "JK"; JQ = "JQ"
 # CARDS_DEALINGS = [KQ, KJ, QK, QJ, JK, JQ]
 
-CARDS = ["K0", "Q0", "J0"]
 K0Q0 = ("K0", "Q0")
 K0J0 = ("K0", "J0")
 Q0K0 = ("Q0", "K0")
@@ -13,10 +12,14 @@ Q0J0 = ("Q0", "J0")
 J0K0 = ("J0", "K0")
 J0Q0 = ("J0", "Q0")
 
-# CARDS = ["K0", "Q0", "J0", "K1", "Q1", "J1"]
+# CARDS = ["K0", "Q0", "J0"]
+# NUM_PLAYERS = 2
 
-CARDS_DEALINGS = list(itertools.permutations(CARDS, 2))
-NUM_PLAYERS = 2
+CARDS = ["K0", "Q0", "J0", "K1", "Q1", "J1"]
+NUM_PLAYERS = 4
+
+CARDS_DEALINGS = list(itertools.permutations(CARDS, NUM_PLAYERS))
+
 
 CHANCE = "CHANCE"
 

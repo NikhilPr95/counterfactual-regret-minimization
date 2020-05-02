@@ -24,7 +24,8 @@ class GameStateBase:
 
 class KuhnRootChanceGameState(GameStateBase):
     def __init__(self, num_players, actions):
-        self.players = PlayerSet(num_players)
+        self.num_players = num_players
+        self.players = PlayerSet(self.num_players)
 
         super().__init__(parent=None, to_move=CHANCE, actions=actions)
         self.children = {
@@ -65,7 +66,7 @@ class KuhnPlayerMoveGameState(GameStateBase):
         }
 
         # public_card = self.cards[0] if self.to_move == A else self.cards[1]
-        public_card = self.cards[0] if self.current_player.team == 1 else self.cards[1]
+        public_card = self.cards[self.current_player.index]
         self._information_set = ".{0}.{1}".format(public_card, ".".join(self.actions_history))
 
     def __get_actions_in_next_round(self, a):
@@ -96,4 +97,3 @@ class KuhnPlayerMoveGameState(GameStateBase):
 
         if self.actions_history[-2] == BET and self.actions_history[-1] == FOLD:
             return self.current_player.weight
-            # return self.to_move * 1
